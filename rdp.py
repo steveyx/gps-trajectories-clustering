@@ -44,8 +44,7 @@ def rdp(points, epsilon):
 
 
 def rdp_with_index(points, indices, epsilon):
-    """Reduces a series of points to a simplified version that loses detail, but
-    maintains the general shape of the series.
+    """rdp with returned point indices
     """
     dmax = 0.0
     index = 0
