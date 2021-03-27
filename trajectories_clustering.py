@@ -73,6 +73,12 @@ class TrajectoryClustering:
         cl.fit(distance_matrix)
         return cl.labels_
 
+    @classmethod
+    def load_cluster(cls, cluster_id):
+        _df = cls.df_cluster
+        _locations = _df.loc[_df["cluster_id"] == cluster_id, ["lat", "lon"]].values
+        return _locations[0]
+
 
 if __name__ == "__main__":
     clusters = [[1, 184], [144, 11], [1, 173], [11, 22], [29, 184], [29, 185]]

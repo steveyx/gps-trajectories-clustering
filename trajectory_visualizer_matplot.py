@@ -16,7 +16,10 @@ class TrajectoryVisualizerMatplot:
         rows, cols = subplots
         self.fig, self.axes = plt.subplots(rows, cols, dpi=dpi, figsize=(6.4, 3.6))
         plt.subplots_adjust(top=0.98, bottom=0.02, left=0.05, right=0.95, hspace=0.02)
-        self.axes = self.axes.flatten()
+        if rows * cols > 1:
+            self.axes = self.axes.flatten()
+        else:
+            self.axes = [self.axes]
         for ax in self.axes:
             ax.set_aspect('equal')
             ax.grid()
@@ -41,25 +44,29 @@ class TrajectoryVisualizerMatplot:
             ax.set_xlim(min_lon - margin, max_lon + margin)
             ax.set_ylim(min_lat - margin, max_lat + margin)
 
-    def add_start_end_location(self, all_logs):
-        for i, group in enumerate(all_logs):
+    def plot_trips(self, trips, clusters):
+        for i, _trip_clu in enumerate(trips):
             ax = self.axes[i]
-            for trip in group:
+            _start, _end = clusters[i][0], clusters[i][1]
+            for trip in _trip_clu:
                 ax.plot(trip[:, 1], trip[:, 0], color=self.select_colors[i % 25])
-            ax.text(group[0][0, 1], group[0][0, 0], "start", fontsize=8, color='black',
+            _start_loc = TrajectoryClustering.load_cluster(_start)
+            _end_loc = TrajectoryClustering.load_cluster(_end)
+            ax.text(_start_loc[1], _start_loc[0], "start", fontsize=8, color='black',
                     horizontalalignment='left', verticalalignment='bottom')
-            ax.text(group[0][-1, 1], group[0][-1, 0], "end", fontsize=8, color='black',
+            ax.text(_end_loc[1], _end_loc[0], "end", fontsize=8, color='black',
                     horizontalalignment='left', verticalalignment='bottom')
-            ax.scatter(group[0][[0, -1], 1], group[0][[0, -1], 0])
+            ax.scatter([_start_loc[1], _end_loc[1]], [_start_loc[0], _end_loc[0]])
 
 
 if __name__ == '__main__':
     clusters = [[1, 184], [1, 173], [11, 22], [29, 184], [144, 11], [29, 185]]
+    clusters = clusters[:1]
     all_trips_logs = []
     for cluster_start, cluster_end in clusters:
         g = TrajectoryClustering.get_trajectories(cluster_start, cluster_end)
         all_trips_logs.append(g)
-    mv = TrajectoryVisualizerMatplot(subplots=(2, 3))
-    mv.add_start_end_location(all_trips_logs)
+    mv = TrajectoryVisualizerMatplot(subplots=(1, 1))
+    mv.plot_trips(all_trips_logs, clusters)
     mv.zoom_fit(all_trips_logs)
     mv.plot_show()
