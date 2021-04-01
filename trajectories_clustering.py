@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from rdp import rdp
+from rdp import rdp, rdp_with_index
 import utm
 from sklearn.cluster import DBSCAN
 import time
@@ -46,29 +46,37 @@ class TrajectoryClustering:
 
     @classmethod
     def calculate_distance_matrix(cls, trajectories):
-        n_traj = len(trajectories)
-        dist_m = np.zeros((n_traj, n_traj), dtype=np.float64)
-        for i in range(n_traj - 1):
+        n = len(trajectories)
+        dist_m = np.zeros((n, n))
+        for i in range(n - 1):
             p = trajectories[i]
-            for j in range(i + 1, n_traj):
+            for j in range(i + 1, n):
                 q = trajectories[j]
                 dist_m[i, j] = sim.frechet_dist(p, q)
                 dist_m[j, i] = dist_m[i, j]
         return dist_m
 
     @classmethod
-    def reduce_polyline_point_by_rdp(cls, polyline, epsilon=10):
+    def reduce_polyline_points_by_rdp(cls, polyline, epsilon=10, return_indices=False):
         """
         :param polyline:
-        :param epsilon: unit in meter
-        :return:
+        :param epsilon: unit in meter for Frechet distance
+        :param return_indices: boolean
         """
         point_list = polyline.tolist()
-        points = rdp(point_list, epsilon=epsilon)
-        return np.array(points)
+        if return_indices:
+            _p_indices = list(range(len(point_list)))
+            points, indices = rdp_with_index(point_list, _p_indices, epsilon=epsilon)
+            return np.array(points), np.array(indices)
+        else:
+            points = rdp(point_list, epsilon=epsilon)
+            return np.array(points)
 
     @classmethod
     def clustering_by_dbscan(cls, distance_matrix, eps=1000):
+        """
+        :param eps: unit in meter for Frechet distance
+        """
         cl = DBSCAN(eps=eps, min_samples=1, metric='precomputed')
         cl.fit(distance_matrix)
         return cl.labels_
@@ -93,10 +101,12 @@ if __name__ == "__main__":
     t1 = time.time()
     print("distance matrix without rdp completes in {} seconds".format(t1 - t0))
     t0 = time.time()
-    trajectories_reduced = [TrajectoryClustering.reduce_polyline_point_by_rdp(p) for p in trajectories_xy]
+    trajectories_reduced = [TrajectoryClustering.reduce_polyline_points_by_rdp(p) for p in trajectories_xy]
     dist_mat_reduced = TrajectoryClustering.calculate_distance_matrix(trajectories_reduced)
     t1 = time.time()
     print("distance matrix with rdp completes in {} seconds.".format(t1 - t0))
-    for i, t in enumerate(trajectories):
-        print("number of data points before rdp: {}, after rdp {}".format(len(t), len(trajectories_reduced[i])))
+    data = [[len(t), len(trajectories_reduced[i])] for i, t in enumerate(trajectories)]
+    df = pd.DataFrame(data=data, columns=["original data points", "after RDP"])
+    df.index.name = "traj #"
+    df.to_csv("data/output/RDP_data_points.csv")
 

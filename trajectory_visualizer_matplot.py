@@ -11,7 +11,7 @@ class TrajectoryVisualizerMatplot:
                      'seagreen', 'blueviolet', 'forestgreen', 'yellow', 'lightgreen']
     markers = ['H', 's', 'd', 'p', '*', 'X', 'P', 'D', 'h', '8', 'v', '^', '<', '>', 'o']
 
-    def __init__(self, map_loc='map/', dpi=100, subplots=(2, 3)):
+    def __init__(self, map_loc='map/', dpi=150, subplots=(2, 3)):
         roads = gpd.GeoDataFrame.from_file(map_loc + 'ann_map.shp')
         rows, cols = subplots
         self.fig, self.axes = plt.subplots(rows, cols, dpi=dpi, figsize=(6.4, 3.6))
@@ -44,8 +44,8 @@ class TrajectoryVisualizerMatplot:
             ax.set_xlim(min_lon - margin, max_lon + margin)
             ax.set_ylim(min_lat - margin, max_lat + margin)
 
-    def plot_trips(self, trips, clusters):
-        for i, _trip_clu in enumerate(trips):
+    def plot_trajectories(self, trajectories, clusters):
+        for i, _trip_clu in enumerate(trajectories):
             ax = self.axes[i]
             _start, _end = clusters[i][0], clusters[i][1]
             for trip in _trip_clu:
@@ -58,15 +58,30 @@ class TrajectoryVisualizerMatplot:
                     horizontalalignment='left', verticalalignment='bottom')
             ax.scatter([_start_loc[1], _end_loc[1]], [_start_loc[0], _end_loc[0]])
 
+    def plot_clustered_trajectories(self, trajectories, start_end_clusters, trip_labels):
+        for i, _trip_clu in enumerate(trajectories):
+            ax = self.axes[i]
+            _labels = trip_labels[i]
+            for j_trip, trip in enumerate(_trip_clu):
+                ax.plot(trip[:, 1], trip[:, 0], color=self.select_colors[_labels[j_trip] % 25])
+            _start, _end = start_end_clusters[i][0], start_end_clusters[i][1]
+            _start_loc = TrajectoryClustering.load_cluster(_start)
+            _end_loc = TrajectoryClustering.load_cluster(_end)
+            ax.text(_start_loc[1], _start_loc[0], "start", fontsize=8, color='black',
+                    horizontalalignment='left', verticalalignment='bottom')
+            ax.text(_end_loc[1], _end_loc[0], "end", fontsize=8, color='black',
+                    horizontalalignment='left', verticalalignment='bottom')
+            ax.scatter([_start_loc[1], _end_loc[1]], [_start_loc[0], _end_loc[0]])
+
 
 if __name__ == '__main__':
     clusters = [[1, 184], [1, 173], [11, 22], [29, 184], [144, 11], [29, 185]]
-    clusters = clusters[:1]
+    clusters = clusters[:]
     all_trips_logs = []
     for cluster_start, cluster_end in clusters:
         g = TrajectoryClustering.get_trajectories(cluster_start, cluster_end)
         all_trips_logs.append(g)
-    mv = TrajectoryVisualizerMatplot(subplots=(1, 1))
-    mv.plot_trips(all_trips_logs, clusters)
+    mv = TrajectoryVisualizerMatplot(subplots=(2, 3))
+    mv.plot_trajectories(all_trips_logs, clusters)
     mv.zoom_fit(all_trips_logs)
     mv.plot_show()
