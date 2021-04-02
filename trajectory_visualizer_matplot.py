@@ -76,7 +76,6 @@ class TrajectoryVisualizerMatplot:
 
 if __name__ == '__main__':
     clusters = [[1, 184], [1, 173], [11, 22], [29, 184], [144, 11], [29, 185]]
-    clusters = clusters[:]
     all_trips_logs = []
     for cluster_start, cluster_end in clusters:
         g = TrajectoryClustering.get_trajectories(cluster_start, cluster_end)
