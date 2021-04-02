@@ -4,7 +4,7 @@ from trajectories_clustering import TrajectoryClustering
 from trajectory_visualizer_matplot import TrajectoryVisualizerMatplot
 import numpy as np
 import geopandas as gpd
-from frechet_dist import FrechetDist
+from distance_measures import FrechetDist
 
 
 class PlotSimilarity:
