@@ -5,7 +5,7 @@ from rdp import rdp, rdp_with_index
 import utm
 from sklearn.cluster import DBSCAN
 import time
-import similaritymeasures as sim
+import similaritymeasures
 
 
 class TrajectoryClustering:
@@ -45,14 +45,17 @@ class TrajectoryClustering:
         return _traj_xy
 
     @classmethod
-    def calculate_distance_matrix(cls, trajectories):
+    def compute_distance_matrix(cls, trajectories, method="Frechet"):
         n = len(trajectories)
         dist_m = np.zeros((n, n))
         for i in range(n - 1):
             p = trajectories[i]
             for j in range(i + 1, n):
                 q = trajectories[j]
-                dist_m[i, j] = sim.frechet_dist(p, q)
+                if method == "Frechet":
+                    dist_m[i, j] = similaritymeasures.frechet_dist(p, q)
+                else:
+                    dist_m[i, j] = similaritymeasures.area_between_two_curves(p, q)
                 dist_m[j, i] = dist_m[i, j]
         return dist_m
 
@@ -60,7 +63,7 @@ class TrajectoryClustering:
     def reduce_polyline_points_by_rdp(cls, polyline, epsilon=10, return_indices=False):
         """
         :param polyline:
-        :param epsilon: unit in meter for Frechet distance
+        :param epsilon: unit m for Frechet distance, m^2 for Area
         :param return_indices: boolean
         """
         point_list = polyline.tolist()
@@ -75,7 +78,7 @@ class TrajectoryClustering:
     @classmethod
     def clustering_by_dbscan(cls, distance_matrix, eps=1000):
         """
-        :param eps: unit in meter for Frechet distance
+        :param eps: unit m for Frechet distance, m^2 for Area
         """
         cl = DBSCAN(eps=eps, min_samples=1, metric='precomputed')
         cl.fit(distance_matrix)
@@ -97,12 +100,12 @@ if __name__ == "__main__":
     trajectories_xy = TrajectoryClustering.convert_lat_lon_to_xy(trajectories)
 
     t0 = time.time()
-    dist_mat = TrajectoryClustering.calculate_distance_matrix(trajectories_xy)
+    dist_mat = TrajectoryClustering.compute_distance_matrix(trajectories_xy)
     t1 = time.time()
     print("distance matrix without rdp completes in {} seconds".format(t1 - t0))
     t0 = time.time()
     trajectories_reduced = [TrajectoryClustering.reduce_polyline_points_by_rdp(p) for p in trajectories_xy]
-    dist_mat_reduced = TrajectoryClustering.calculate_distance_matrix(trajectories_reduced)
+    dist_mat_reduced = TrajectoryClustering.compute_distance_matrix(trajectories_reduced)
     t1 = time.time()
     print("distance matrix with rdp completes in {} seconds.".format(t1 - t0))
     data = [[len(t), len(trajectories_reduced[i])] for i, t in enumerate(trajectories)]

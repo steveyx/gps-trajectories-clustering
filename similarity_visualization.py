@@ -39,36 +39,39 @@ class PlotSimilarity:
 
 if __name__ == "__main__":
     clusters = [[1, 184], [144, 11], [1, 173], [11, 22], [29, 184], [29, 185]]
-    cluster_ini, cluster_end = clusters[0]
+    all_trips_logs = []
+    all_labels = []
+    selected_clusters = clusters[:1]
+    for cluster_start, cluster_end in selected_clusters:
+        trajectories = TrajectoryClustering.get_trajectories(cluster_start, cluster_end)
+        trajectories_xy = TrajectoryClustering.convert_lat_lon_to_xy(trajectories)
 
-    trajectories = TrajectoryClustering.get_trajectories(cluster_ini, cluster_end)
-    trajectories_xy = TrajectoryClustering.convert_lat_lon_to_xy(trajectories)
+        trajectories_reduced = [TrajectoryClustering.reduce_polyline_points_by_rdp(p, return_indices=True)
+                                for p in trajectories_xy]
+        points_indices = [t[1] for t in trajectories_reduced]
+        trajectories_reduced = [t[0] for t in trajectories_reduced]
+        dist_mat_reduced = TrajectoryClustering.compute_distance_matrix(trajectories_reduced)
+        print(dist_mat_reduced.shape)
+        labels = TrajectoryClustering.clustering_by_dbscan(dist_mat_reduced, eps=400000)
+        print(labels)
+        all_trips_logs.append(trajectories)
+        all_labels.append(labels)
 
-    trajectories_reduced = [TrajectoryClustering.reduce_polyline_points_by_rdp(p, return_indices=True)
-                            for p in trajectories_xy]
-    points_indices = [t[1] for t in trajectories_reduced]
-    trajectories_reduced = [t[0] for t in trajectories_reduced]
-    dist_mat_reduced = TrajectoryClustering.calculate_distance_matrix(trajectories_reduced)
-    labels = TrajectoryClustering.clustering_by_dbscan(dist_mat_reduced, eps=1000)
-    print(labels)
-
-    clusters = clusters[:1]
-    all_trips_logs = [trajectories]
     mv = TrajectoryVisualizerMatplot(subplots=(1, 1))
-    mv.plot_clustered_trajectories(all_trips_logs, clusters, [labels])
+    mv.plot_clustered_trajectories(all_trips_logs, selected_clusters, all_labels)
     mv.zoom_fit(all_trips_logs)
     mv.plot_show()
 
-    c0 = [i for i, l0 in enumerate(labels) if l0 == 1][0]
-    c1 = [i for i, l1 in enumerate(labels) if l1 == 0][0]
-    f_d, p_i, q_i = FrechetDist.frechetdist_index(trajectories_reduced[c0], trajectories_reduced[c1])
-
-    clusters = clusters[:1]
-    all_trips_logs = [[trajectories[c][points_indices[c], :] for c in [c0, c1]]]
-    mv = TrajectoryVisualizerMatplot(subplots=(1, 1))
-    mv.plot_clustered_trajectories(all_trips_logs, clusters, [[c0, c1]])
-    mv.zoom_fit(all_trips_logs)
-    PlotSimilarity.plot_area_between(all_trips_logs[0][0], all_trips_logs[0][1], axis=mv.axes[0])
-    PlotSimilarity.plot_frechet_dist(trajectories_reduced[c0], trajectories_reduced[c1],
-                                     all_trips_logs[0][0], all_trips_logs[0][1], axis=mv.axes[0])
-    mv.plot_show()
+    # c0 = [i for i, l0 in enumerate(all_labels[0]) if l0 == 1][0]
+    # c1 = [i for i, l1 in enumerate(all_labels[0]) if l1 == 0][0]
+    # f_d, p_i, q_i = FrechetDist.frechetdist_index(trajectories_reduced[c0], trajectories_reduced[c1])
+    #
+    # clusters = clusters[:1]
+    # all_trips_logs = [[trajectories[c][points_indices[c], :] for c in [c0, c1]]]
+    # mv = TrajectoryVisualizerMatplot(subplots=(1, 1))
+    # mv.plot_clustered_trajectories(all_trips_logs, selected_clusters, [[c0, c1]])
+    # mv.zoom_fit(all_trips_logs)
+    # PlotSimilarity.plot_area_between(all_trips_logs[0][0], all_trips_logs[0][1], axis=mv.axes[0])
+    # PlotSimilarity.plot_frechet_dist(trajectories_reduced[c0], trajectories_reduced[c1],
+    #                                  all_trips_logs[0][0], all_trips_logs[0][1], axis=mv.axes[0])
+    # mv.plot_show()

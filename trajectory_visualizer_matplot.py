@@ -84,3 +84,26 @@ if __name__ == '__main__':
     mv.plot_trajectories(all_trips_logs, clusters)
     mv.zoom_fit(all_trips_logs)
     mv.plot_show()
+
+    all_trips_logs = []
+    all_labels = []
+    selected_clusters = clusters[:]
+    for cluster_start, cluster_end in selected_clusters:
+        trajectories = TrajectoryClustering.get_trajectories(cluster_start, cluster_end)
+        trajectories_xy = TrajectoryClustering.convert_lat_lon_to_xy(trajectories)
+
+        trajectories_reduced = [TrajectoryClustering.reduce_polyline_points_by_rdp(p, return_indices=True)
+                                for p in trajectories_xy]
+        points_indices = [t[1] for t in trajectories_reduced]
+        trajectories_reduced = [t[0] for t in trajectories_reduced]
+        dist_mat_reduced = TrajectoryClustering.compute_distance_matrix(trajectories_reduced)
+        print(dist_mat_reduced.shape)
+        labels = TrajectoryClustering.clustering_by_dbscan(dist_mat_reduced, eps=1000)
+        print(labels)
+        all_trips_logs.append(trajectories)
+        all_labels.append(labels)
+
+    mv = TrajectoryVisualizerMatplot(subplots=(2, 3))
+    mv.plot_clustered_trajectories(all_trips_logs, selected_clusters, all_labels)
+    mv.zoom_fit(all_trips_logs)
+    mv.plot_show()
