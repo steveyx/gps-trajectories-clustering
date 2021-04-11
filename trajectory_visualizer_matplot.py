@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import geopandas as gpd
 import numpy as np
 from trajectories_clustering import TrajectoryClustering
+import matplotlib as mpl
 
 
 class TrajectoryVisualizerMatplot:
@@ -28,8 +29,9 @@ class TrajectoryVisualizerMatplot:
             ax.set_ylim(1.22, 1.475)
             ax.axes.xaxis.set_ticklabels([])
             ax.axes.yaxis.set_ticklabels([])
-        fig_manager = plt.get_current_fig_manager()
-        fig_manager.window.showMaximized()
+        if mpl.get_backend() == 'Qt5Agg':
+            fig_manager = plt.get_current_fig_manager()
+            fig_manager.window.showMaximized()
 
     @staticmethod
     def plot_show():

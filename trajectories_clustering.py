@@ -5,7 +5,7 @@ from rdp import rdp, rdp_with_index
 import utm
 from sklearn.cluster import DBSCAN
 import time
-import similaritymeasures
+import similaritymeasures as sim
 
 
 class TrajectoryClustering:
@@ -53,9 +53,9 @@ class TrajectoryClustering:
             for j in range(i + 1, n):
                 q = trajectories[j]
                 if method == "Frechet":
-                    dist_m[i, j] = similaritymeasures.frechet_dist(p, q)
+                    dist_m[i, j] = sim.frechet_dist(p, q)
                 else:
-                    dist_m[i, j] = similaritymeasures.area_between_two_curves(p, q)
+                    dist_m[i, j] = sim.area_between_two_curves(p, q)
                 dist_m[j, i] = dist_m[i, j]
         return dist_m
 
@@ -93,12 +93,11 @@ class TrajectoryClustering:
 
 if __name__ == "__main__":
     clusters = [[1, 184], [144, 11], [1, 173], [11, 22], [29, 184], [29, 185]]
-    cluster_ini, cluster_end = clusters[1]
+    cluster_start, cluster_end = clusters[1]
 
-    trajectories = TrajectoryClustering.get_trajectories(cluster_ini, cluster_end)[:]
+    trajectories = TrajectoryClustering.get_trajectories(cluster_start, cluster_end)
     print("number of trajectories: {}".format(len(trajectories)))
     trajectories_xy = TrajectoryClustering.convert_lat_lon_to_xy(trajectories)
-
     t0 = time.time()
     dist_mat = TrajectoryClustering.compute_distance_matrix(trajectories_xy)
     t1 = time.time()
